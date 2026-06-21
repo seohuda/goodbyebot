@@ -10,6 +10,9 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 def wrap_text(text: str, font: ImageFont.FreeTypeFont, max_width: int):
     lines = []
     words = text.split()
+    if not words:
+        return []
+
     current_line = ""
 
     for word in words:
@@ -47,6 +50,9 @@ def generate_funeral_image(author_name: str, message_content: str):
     draw.text((400, 150), f"故 {author_name}", fill=(255, 255, 255), font=font_title, anchor="mm")
     draw.text((400, 900), "삼가 고인의 명복을 빕니다", fill=(200, 200, 200), font=font_bottom, anchor="mm")
     
+    if len(message_content) > 150:
+        message_content = message_content[:147] + "..."
+        
     wrapped_lines = wrap_text(f'"{message_content}"', font_content, 700)
     
     total_text_height = len(wrapped_lines) * 60
@@ -76,16 +82,31 @@ class FuneralClient(discord.Client):
             if message.reference and isinstance(message.reference.resolved, discord.Message):
                 target_message = message.reference.resolved
 
-            canvas = generate_funeral_image(target_message.author.display_name, target_message.content)
-            
-            buffer = io.BytesIO()
-            canvas.save(buffer, format="PNG")
-            buffer.seek(0)
-            
-            file = discord.File(buffer, filename="funeral.png")
-            await message.channel.send(file=file, reference=message)
+            content = target_message.clean_content
+            if target_message == message:
+                content = content.replace(f'@{self.user.display_name}', '').strip()
+                content = content.replace(f'@{self.user.name}', '').strip()
+                
+            if not content:
+                content = "(내용 없음)"
+
+            try:
+                canvas = generate_funeral_image(target_message.author.display_name, content)
+                
+                buffer = io.BytesIO()
+                canvas.save(buffer, format="PNG")
+                buffer.seek(0)
+                
+                file = discord.File(buffer, filename="funeral.png")
+                await message.channel.send(file=file, reference=message)
+            except Exception as e:
+                print(f"Error: {e}")
+                await message.channel.send("이미지 생성 중 오류가 발생했습니다.", reference=message)
 
 client = FuneralClient()
 
 if __name__ == "__main__":
-    client.run(TOKEN)
+    if not TOKEN:
+        print("Error: DISCORD_TOKEN is not set in .env file.")
+    else:
+        client.run(TOKEN)
