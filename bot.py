@@ -21,7 +21,7 @@ class FuneralClient(discord.Client):
             if message.reference and isinstance(message.reference.resolved, discord.Message):
                 target_message = message.reference.resolved
 
-            # 예외 처리 1: 첨부파일이나 임베드만 있는 경우
+            # 첨부파일이나 임베드만 있는 경우
             if not target_message.content and (target_message.attachments or target_message.embeds):
                 await message.channel.send("텍스트 메시지만 영정사진으로 만들 수 있습니다.", reference=message)
                 return
@@ -34,7 +34,7 @@ class FuneralClient(discord.Client):
             if not content:
                 content = "(내용 없음)"
 
-            # 예외 처리 2: 너무 긴 메시지 자르기
+            # 너무 긴 메시지 자르기
             if len(content) > 150:
                 content = content[:147] + "..."
 
