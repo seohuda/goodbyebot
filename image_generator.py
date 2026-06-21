@@ -25,9 +25,6 @@ def generate_funeral_image(author_name: str, message_content: str):
         
     draw.text((400, 150), f"故 {author_name}", fill=(255, 255, 255), font=font_title, anchor="mm")
     draw.text((400, 900), "삼가 고인의 명복을 빕니다", fill=(200, 200, 200), font=font_bottom, anchor="mm")
-    
-    if len(message_content) > 150:
-        message_content = message_content[:147] + "..."
         
     wrapped_lines = wrap_text(f'"{message_content}"', font_content, 700)
     
