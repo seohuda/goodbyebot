@@ -26,7 +26,7 @@ def wrap_text(text: str, font: ImageFont.FreeTypeFont, max_width: int):
 
     return lines
 
-def create_base_canvas(author_name: str):
+def generate_funeral_image(author_name: str, message_content: str):
     canvas = Image.new("RGB", (800, 1000), (20, 20, 20))
     draw = ImageDraw.Draw(canvas)
     
@@ -37,15 +37,26 @@ def create_base_canvas(author_name: str):
     
     try:
         font_title = ImageFont.truetype("malgun.ttf", 60)
+        font_content = ImageFont.truetype("malgun.ttf", 45)
         font_bottom = ImageFont.truetype("malgun.ttf", 40)
     except IOError:
         font_title = ImageFont.load_default(size=60)
+        font_content = ImageFont.load_default(size=45)
         font_bottom = ImageFont.load_default(size=40)
         
     draw.text((400, 150), f"故 {author_name}", fill=(255, 255, 255), font=font_title, anchor="mm")
     draw.text((400, 900), "삼가 고인의 명복을 빕니다", fill=(200, 200, 200), font=font_bottom, anchor="mm")
     
-    return canvas, draw
+    wrapped_lines = wrap_text(f'"{message_content}"', font_content, 700)
+    
+    total_text_height = len(wrapped_lines) * 60
+    y_offset = (1000 - total_text_height) // 2
+    
+    for line in wrapped_lines:
+        draw.text((400, y_offset), line, fill=(255, 255, 255), font=font_content, anchor="mm")
+        y_offset += 60
+        
+    return canvas
 
 class FuneralClient(discord.Client):
     def __init__(self):
@@ -67,7 +78,7 @@ client = FuneralClient()
     allowed_contexts=app_commands.AppCommandContext(guild=True, bot_dm=True, private_channel=True)
 )
 async def funeral_menu(interaction: discord.Interaction, message: discord.Message):
-    canvas, draw = create_base_canvas(message.author.display_name)
+    canvas = generate_funeral_image(message.author.display_name, message.content)
     await interaction.response.send_message("준비 중...", ephemeral=True)
 
 if __name__ == "__main__":
