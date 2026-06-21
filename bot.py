@@ -1,7 +1,6 @@
 import os
 import io
 import discord
-from discord import app_commands
 from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
 
@@ -62,33 +61,31 @@ def generate_funeral_image(author_name: str, message_content: str):
 class FuneralClient(discord.Client):
     def __init__(self):
         intents = discord.Intents.default()
+        intents.message_content = True
         super().__init__(intents=intents)
-        self.tree = app_commands.CommandTree(self)
-
-    async def setup_hook(self):
-        await self.tree.sync()
 
     async def on_ready(self):
-        pass
+        print(f"Logged in as {self.user}")
+
+    async def on_message(self, message):
+        if message.author.bot:
+            return
+        
+        if self.user.mentioned_in(message):
+            target_message = message
+            if message.reference and isinstance(message.reference.resolved, discord.Message):
+                target_message = message.reference.resolved
+
+            canvas = generate_funeral_image(target_message.author.display_name, target_message.content)
+            
+            buffer = io.BytesIO()
+            canvas.save(buffer, format="PNG")
+            buffer.seek(0)
+            
+            file = discord.File(buffer, filename="funeral.png")
+            await message.channel.send(file=file, reference=message)
 
 client = FuneralClient()
-
-@client.tree.context_menu(
-    name="장례식 치르기",
-    allowed_installs=app_commands.AppInstallationType(user=True),
-    allowed_contexts=app_commands.AppCommandContext(guild=True, bot_dm=True, private_channel=True)
-)
-async def funeral_menu(interaction: discord.Interaction, message: discord.Message):
-    await interaction.response.defer()
-    
-    canvas = generate_funeral_image(message.author.display_name, message.content)
-    
-    buffer = io.BytesIO()
-    canvas.save(buffer, format="PNG")
-    buffer.seek(0)
-    
-    file = discord.File(buffer, filename="funeral.png")
-    await interaction.followup.send(file=file)
 
 if __name__ == "__main__":
     client.run(TOKEN)
