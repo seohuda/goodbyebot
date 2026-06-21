@@ -45,7 +45,7 @@ echo "DISCORD_TOKEN=your_bot_token_here" > .env
 
 ### 3. Assets Required
 The code references the `malgun.ttf` font. 
-Place a `.ttf` font file in the project root directory or modify the font file name in the code to match your environment.
+Place a `.ttf` font file in `assets/fonts/` directory, or modify the font file name in the code to match your environment.
 
 ### 4. Run
 ```bash
