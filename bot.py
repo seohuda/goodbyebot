@@ -3,31 +3,10 @@ import io
 import discord
 from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
+from text_utils import wrap_text
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
-
-def wrap_text(text: str, font: ImageFont.FreeTypeFont, max_width: int):
-    lines = []
-    words = text.split()
-    if not words:
-        return []
-
-    current_line = ""
-
-    for word in words:
-        test_line = current_line + word + " "
-        if font.getlength(test_line) <= max_width:
-            current_line = test_line
-        else:
-            if current_line:
-                lines.append(current_line.strip())
-            current_line = word + " "
-            
-    if current_line:
-        lines.append(current_line.strip())
-
-    return lines
 
 def generate_funeral_image(author_name: str, message_content: str):
     canvas = Image.new("RGB", (800, 1000), (20, 20, 20))
