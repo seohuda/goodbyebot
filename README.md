@@ -37,7 +37,7 @@ Simply reply to a target message and mention the bot, or mention the bot in your
 
 ### 2. Setup
 ```bash
-git clone https://github.com/your-username/goodbyebot.git
+git clone https://github.com/seohuda/goodbyebot.git
 cd goodbyebot
 pip install -r requirements.txt
 echo "DISCORD_TOKEN=your_bot_token_here" > .env
