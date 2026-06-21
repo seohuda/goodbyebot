@@ -7,6 +7,25 @@ from PIL import Image, ImageDraw, ImageFont
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
+def wrap_text(text: str, font: ImageFont.FreeTypeFont, max_width: int):
+    lines = []
+    words = text.split()
+    current_line = ""
+
+    for word in words:
+        test_line = current_line + word + " "
+        if font.getlength(test_line) <= max_width:
+            current_line = test_line
+        else:
+            if current_line:
+                lines.append(current_line.strip())
+            current_line = word + " "
+            
+    if current_line:
+        lines.append(current_line.strip())
+
+    return lines
+
 def create_base_canvas(author_name: str):
     canvas = Image.new("RGB", (800, 1000), (20, 20, 20))
     draw = ImageDraw.Draw(canvas)
