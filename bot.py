@@ -1,12 +1,10 @@
 import os
 import io
 import discord
-from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
 from text_utils import wrap_text
 
-load_dotenv()
-TOKEN = os.getenv("DISCORD_TOKEN")
+from config import TOKEN
 
 def generate_funeral_image(author_name: str, message_content: str):
     canvas = Image.new("RGB", (800, 1000), (20, 20, 20))
