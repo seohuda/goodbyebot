@@ -1,4 +1,5 @@
 import os
+import io
 import discord
 from discord import app_commands
 from dotenv import load_dotenv
@@ -78,8 +79,16 @@ client = FuneralClient()
     allowed_contexts=app_commands.AppCommandContext(guild=True, bot_dm=True, private_channel=True)
 )
 async def funeral_menu(interaction: discord.Interaction, message: discord.Message):
+    await interaction.response.defer()
+    
     canvas = generate_funeral_image(message.author.display_name, message.content)
-    await interaction.response.send_message("준비 중...", ephemeral=True)
+    
+    buffer = io.BytesIO()
+    canvas.save(buffer, format="PNG")
+    buffer.seek(0)
+    
+    file = discord.File(buffer, filename="funeral.png")
+    await interaction.followup.send(file=file)
 
 if __name__ == "__main__":
     client.run(TOKEN)
