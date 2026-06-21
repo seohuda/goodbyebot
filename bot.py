@@ -1,45 +1,8 @@
+from image_generator import generate_funeral_image
 import os
 import io
 import discord
-from PIL import Image, ImageDraw, ImageFont
-from text_utils import wrap_text
-
 from config import TOKEN
-
-def generate_funeral_image(author_name: str, message_content: str):
-    canvas = Image.new("RGB", (800, 1000), (20, 20, 20))
-    draw = ImageDraw.Draw(canvas)
-    
-    draw.rectangle([(20, 20), (780, 980)], outline=(100, 100, 100), width=10)
-    
-    draw.polygon([(20, 20), (120, 20), (20, 120)], fill=(0, 0, 0))
-    draw.polygon([(780, 20), (680, 20), (780, 120)], fill=(0, 0, 0))
-    
-    try:
-        font_title = ImageFont.truetype("malgun.ttf", 60)
-        font_content = ImageFont.truetype("malgun.ttf", 45)
-        font_bottom = ImageFont.truetype("malgun.ttf", 40)
-    except IOError:
-        font_title = ImageFont.load_default(size=60)
-        font_content = ImageFont.load_default(size=45)
-        font_bottom = ImageFont.load_default(size=40)
-        
-    draw.text((400, 150), f"故 {author_name}", fill=(255, 255, 255), font=font_title, anchor="mm")
-    draw.text((400, 900), "삼가 고인의 명복을 빕니다", fill=(200, 200, 200), font=font_bottom, anchor="mm")
-    
-    if len(message_content) > 150:
-        message_content = message_content[:147] + "..."
-        
-    wrapped_lines = wrap_text(f'"{message_content}"', font_content, 700)
-    
-    total_text_height = len(wrapped_lines) * 60
-    y_offset = (1000 - total_text_height) // 2
-    
-    for line in wrapped_lines:
-        draw.text((400, y_offset), line, fill=(255, 255, 255), font=font_content, anchor="mm")
-        y_offset += 60
-        
-    return canvas
 
 class FuneralClient(discord.Client):
     def __init__(self):
