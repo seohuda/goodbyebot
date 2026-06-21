@@ -2,9 +2,14 @@ import os
 import discord
 from discord import app_commands
 from dotenv import load_dotenv
+from PIL import Image
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
+
+def create_base_canvas():
+    canvas = Image.new("RGB", (800, 1000), (20, 20, 20))
+    return canvas
 
 class FuneralClient(discord.Client):
     def __init__(self):
@@ -26,6 +31,7 @@ client = FuneralClient()
     allowed_contexts=app_commands.AppCommandContext(guild=True, bot_dm=True, private_channel=True)
 )
 async def funeral_menu(interaction: discord.Interaction, message: discord.Message):
+    canvas = create_base_canvas()
     await interaction.response.send_message("준비 중...", ephemeral=True)
 
 if __name__ == "__main__":
