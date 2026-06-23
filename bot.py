@@ -1,5 +1,5 @@
 import io
-from collections.abc import Sized
+from collections.abc import Collection, Sized
 from typing import Final, Protocol
 
 import discord
@@ -22,6 +22,8 @@ class MessageContent(Protocol):
     clean_content: str
     attachments: Sized
     embeds: Sized
+    mentions: Collection[BotUser]
+    mention_everyone: bool
 
 
 def strip_bot_mentions(content: str, bot_user: BotUser) -> str:
@@ -39,6 +41,16 @@ def truncate_content(content: str) -> str:
 
 def has_media(message: MessageContent) -> bool:
     return len(message.attachments) > 0 or len(message.embeds) > 0
+
+
+def should_handle_message(message: MessageContent, bot_user: BotUser) -> bool:
+    if message.mention_everyone:
+        return False
+
+    if bot_user not in message.mentions:
+        return False
+
+    return len(message.mentions) == 1
 
 
 def extract_message_content(
@@ -76,7 +88,7 @@ class FuneralClient(discord.Client):
         if bot_user is None:
             return
 
-        if bot_user.mentioned_in(message):
+        if should_handle_message(message, bot_user):
             target_message = message
             if message.reference and isinstance(message.reference.resolved, discord.Message):
                 target_message = message.reference.resolved
