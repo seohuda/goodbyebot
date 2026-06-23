@@ -42,7 +42,7 @@ Simply reply to a target message and mention the bot, and it will generate a mem
 ```bash
 git clone https://github.com/seohuda/goodbyebot.git
 cd goodbyebot
-pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 echo "DISCORD_TOKEN=your_bot_token_here" > .env
 ```
 
