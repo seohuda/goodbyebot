@@ -2,6 +2,7 @@ import io
 from collections.abc import Collection, Sized
 from typing import Final, Protocol
 
+import aiohttp
 import discord
 from config import TOKEN
 from image_generator import generate_funeral_image
@@ -16,7 +17,14 @@ class BotUser(Protocol):
     id: int
     display_name: str
     name: str
-    display_avatar: object
+
+
+class AvatarAsset(Protocol):
+    async def read(self) -> bytes: ...
+
+
+class UserWithAvatar(BotUser, Protocol):
+    display_avatar: AvatarAsset
 
 
 class MessageReference(Protocol):
@@ -64,6 +72,13 @@ def should_handle_reply_message(message: MessageContent, bot_user: BotUser) -> b
         return False
 
     return any(mention.id == bot_user.id for mention in message.mentions)
+
+
+async def read_avatar_bytes(user: UserWithAvatar) -> bytes | None:
+    try:
+        return await user.display_avatar.read()
+    except (aiohttp.ClientError, OSError, discord.HTTPException, ValueError, TimeoutError):
+        return None
 
 
 async def resolve_reply_target(message: discord.Message) -> discord.Message | None:
@@ -130,7 +145,7 @@ class FuneralClient(discord.Client):
                 return
 
             try:
-                avatar_bytes = await target_message.author.display_avatar.read()
+                avatar_bytes = await read_avatar_bytes(target_message.author)
                 canvas = generate_funeral_image(
                     target_message.author.display_name,
                     content,
