@@ -120,5 +120,9 @@ def test_generate_funeral_image_draws_inverted_top_ribbon(monkeypatch) -> None:
         avatar_bytes=None,
     )
 
+    ribbon_colors = {image_generator.FRAME_COLOR, image_generator.FRAME_HIGHLIGHT}
+
     assert canvas.getpixel((330, 110)) == image_generator.FRAME_COLOR
     assert canvas.getpixel((470, 110)) == image_generator.FRAME_COLOR
+    assert canvas.getpixel((120, 220)) in ribbon_colors
+    assert canvas.getpixel((680, 220)) in ribbon_colors
