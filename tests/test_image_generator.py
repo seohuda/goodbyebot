@@ -35,6 +35,26 @@ def test_load_korean_font_uses_first_existing_candidate(monkeypatch, tmp_path) -
     assert calls == [(second_candidate, 60, 2)]
 
 
+def test_fit_font_to_width_shrinks_long_title(monkeypatch) -> None:
+    class FakeFont:
+        def __init__(self, size: int) -> None:
+            self.size = size
+
+        def getlength(self, text: str) -> float:
+            return len(text) * self.size
+
+    monkeypatch.setattr(
+        image_generator,
+        "load_korean_font",
+        lambda size: FakeFont(size),
+    )
+
+    font = image_generator.fit_font_to_width("아주아주긴이름", 100, 56, 24)
+
+    assert font.size < 56
+    assert font.size >= 24
+
+
 def test_generate_funeral_image_renders_avatar(monkeypatch) -> None:
     def fake_font(size: int) -> image_generator.ImageFont.ImageFont:
         return image_generator.ImageFont.load_default(size=size)
@@ -51,4 +71,54 @@ def test_generate_funeral_image_renders_avatar(monkeypatch) -> None:
         avatar_bytes=buffer.getvalue(),
     )
 
-    assert canvas.getpixel((400, 320)) != (20, 20, 20)
+    assert canvas.getpixel((400, 260)) != (20, 20, 20)
+
+
+def test_generate_funeral_image_uses_placeholder_avatar_when_missing(monkeypatch) -> None:
+    def fake_font(size: int) -> image_generator.ImageFont.ImageFont:
+        return image_generator.ImageFont.load_default(size=size)
+
+    monkeypatch.setattr(image_generator, "load_korean_font", fake_font)
+
+    canvas = image_generator.generate_funeral_image(
+        "장례식봇",
+        "테스트 한글 메시지입니다",
+        avatar_bytes=None,
+    )
+
+    assert canvas.getpixel((400, 260)) == (232, 232, 232)
+
+
+def test_generate_funeral_image_places_id_and_message_below_frame(monkeypatch) -> None:
+    def fake_font(size: int) -> image_generator.ImageFont.ImageFont:
+        return image_generator.ImageFont.load_default(size=size)
+
+    monkeypatch.setattr(image_generator, "load_korean_font", fake_font)
+
+    canvas = image_generator.generate_funeral_image(
+        "장례식봇",
+        "아이디 아래에 유언이 내려와야 해",
+        avatar_bytes=None,
+    )
+
+    name_region = canvas.crop((160, 560, 640, 680))
+    message_region = canvas.crop((120, 690, 680, 920))
+
+    assert name_region.getbbox() is not None
+    assert message_region.getbbox() is not None
+
+
+def test_generate_funeral_image_draws_inverted_top_ribbon(monkeypatch) -> None:
+    def fake_font(size: int) -> image_generator.ImageFont.ImageFont:
+        return image_generator.ImageFont.load_default(size=size)
+
+    monkeypatch.setattr(image_generator, "load_korean_font", fake_font)
+
+    canvas = image_generator.generate_funeral_image(
+        "장례식봇",
+        "상단 리본은 v가 아니라 /\\ 모양이어야 해",
+        avatar_bytes=None,
+    )
+
+    assert canvas.getpixel((330, 110)) == image_generator.FRAME_COLOR
+    assert canvas.getpixel((470, 110)) == image_generator.FRAME_COLOR
