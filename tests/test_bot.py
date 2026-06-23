@@ -1,6 +1,9 @@
+import asyncio
 from dataclasses import dataclass, field
 
-from bot import extract_message_content, should_handle_reply_message
+import aiohttp
+
+from bot import extract_message_content, read_avatar_bytes, should_handle_reply_message
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,6 +28,17 @@ class FakeMessage:
     mentions: list["FakeBotUser"] = field(default_factory=list)
     mention_everyone: bool = False
     reference: FakeReference | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class FakeAvatar:
+    async def read(self) -> bytes:
+        raise aiohttp.ClientError("boom")
+
+
+@dataclass(frozen=True, slots=True)
+class FakeAvatarUser:
+    display_avatar: FakeAvatar = FakeAvatar()
 
 
 def test_extract_message_content_rejects_attachment_only_invocation() -> None:
@@ -122,3 +136,14 @@ def test_should_handle_reply_message_accepts_bot_only_reply() -> None:
 
     # Then: the bot handles the reply.
     assert should_handle is True
+
+
+def test_read_avatar_bytes_falls_back_when_cdn_is_unreachable() -> None:
+    # Given: the avatar CDN fetch fails with a client error.
+    user = FakeAvatarUser()
+
+    # When: the bot tries to read the avatar bytes.
+    avatar_bytes = asyncio.run(read_avatar_bytes(user))
+
+    # Then: the bot falls back to a placeholder avatar.
+    assert avatar_bytes is None
