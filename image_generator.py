@@ -44,8 +44,8 @@ PANEL_COLOR: Final[tuple[int, int, int]] = (246, 246, 246)
 PANEL_EDGE: Final[tuple[int, int, int]] = (225, 225, 225)
 PLACEHOLDER_COLOR: Final[tuple[int, int, int]] = (232, 232, 232)
 TOP_RIBBON_APEX: Final[Point] = (CANVAS_SIZE[0] // 2, PANEL_TOP - 24)
-TOP_RIBBON_LEFT_BASE: Final[Point] = (PANEL_LEFT + RIBBON_WIDTH // 2, PANEL_TOP + 150)
-TOP_RIBBON_RIGHT_BASE: Final[Point] = (PANEL_RIGHT - RIBBON_WIDTH // 2, PANEL_TOP + 150)
+TOP_RIBBON_LEFT_BASE: Final[Point] = (PANEL_LEFT - RIBBON_WIDTH, PANEL_TOP + 180)
+TOP_RIBBON_RIGHT_BASE: Final[Point] = (PANEL_RIGHT + RIBBON_WIDTH, PANEL_TOP + 180)
 
 
 def load_korean_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
