@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from bot import extract_message_content
+from bot import extract_message_content, should_handle_message
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,6 +15,8 @@ class FakeMessage:
     clean_content: str
     attachments: list[str] = field(default_factory=list)
     embeds: list[str] = field(default_factory=list)
+    mentions: list["FakeBotUser"] = field(default_factory=list)
+    mention_everyone: bool = False
 
 
 def test_extract_message_content_rejects_attachment_only_invocation() -> None:
@@ -59,3 +61,37 @@ def test_extract_message_content_truncates_long_text() -> None:
 
     # Then: it is capped at 150 characters with an ellipsis.
     assert content == ("a" * 147) + "..."
+
+
+def test_should_handle_message_ignores_everyone_ping() -> None:
+    # Given: a message that pings everyone and the bot.
+    bot_user = FakeBotUser()
+    message = FakeMessage(
+        content="@everyone @Goodbye",
+        clean_content="@everyone @Goodbye",
+        mentions=[bot_user],
+        mention_everyone=True,
+    )
+
+    # When: the bot checks whether to process the message.
+    should_handle = should_handle_message(message, bot_user)
+
+    # Then: the bot ignores the message.
+    assert should_handle is False
+
+
+def test_should_handle_message_requires_bot_only_mention() -> None:
+    # Given: a message that mentions the bot and another user.
+    bot_user = FakeBotUser()
+    other_user = FakeBotUser(display_name="Other", name="other")
+    message = FakeMessage(
+        content="@Goodbye @Other",
+        clean_content="@Goodbye @Other",
+        mentions=[bot_user, other_user],
+    )
+
+    # When: the bot checks whether to process the message.
+    should_handle = should_handle_message(message, bot_user)
+
+    # Then: the bot ignores the message because the mention is not bot-only.
+    assert should_handle is False
