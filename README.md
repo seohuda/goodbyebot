@@ -17,15 +17,17 @@
 ## Introduction
 
 Turn any memorable message into a "funeral portrait".
-Simply reply to a target message and mention the bot, or mention the bot in your own message, and it will generate a memorial image.
+Simply reply to a target message and mention the bot, and it will generate a memorial image.
 
 ## Key Features
 
-- **Mention Support**
-  - Reply to a message and mention the bot to instantly create an image for that message.
+- **Reply-only trigger**
+  - Reply to a message and mention the bot to instantly create an image for that replied message.
+- **Profile Picture Rendering**
+  - The target user’s avatar is embedded in the memorial image.
 - **Dynamic Image Generation**
   - Real-time canvas rendering using the `Pillow` library.
-  - Intelligent auto word-wrap and center alignment based on font length.
+  - The message is rendered below the avatar with automatic wrapping and center alignment.
 - **Memory Buffer Transfer**
   - Direct transmission to the Discord server via `io.BytesIO` buffer without saving the image to disk.
 
