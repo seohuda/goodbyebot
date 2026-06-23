@@ -44,8 +44,8 @@ echo "DISCORD_TOKEN=your_bot_token_here" > .env
 ```
 
 ### 3. Assets Required
-The code references the `malgun.ttf` font. 
-Place a `.ttf` font file in `assets/fonts/` directory, or modify the font file name in the code to match your environment.
+The bot auto-detects a Korean-capable system font on macOS and falls back to a font in `assets/fonts/` if you provide one there.
+If you want to override the default, place a `.ttf` or `.ttc` font file in `assets/fonts/` and name it `malgun.ttf`, or update `image_generator.py` to point at your preferred font.
 
 ### 4. Run
 ```bash

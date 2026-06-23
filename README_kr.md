@@ -44,8 +44,8 @@ echo "DISCORD_TOKEN=your_bot_token_here" > .env
 ```
 
 ### 3. 필수 에셋
-코드 내에서 `malgun.ttf` (맑은 고딕) 폰트를 참조하고 있습니다. 
-`assets/fonts/` 폴더에 `.ttf` 폰트 파일을 배치하거나, 코드 내부의 폰트 파일명을 환경에 맞게 수정하세요.
+봇은 macOS에서 한글을 지원하는 시스템 폰트를 자동으로 찾고, 없으면 `assets/fonts/` 안의 폰트를 사용합니다.
+기본값을 바꾸고 싶다면 `assets/fonts/` 폴더에 `.ttf` 또는 `.ttc` 폰트를 넣고 `malgun.ttf`로 이름을 맞추거나, `image_generator.py`에서 선호하는 폰트 경로를 직접 수정하세요.
 
 ### 4. 실행
 ```bash
