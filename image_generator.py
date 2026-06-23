@@ -1,5 +1,7 @@
 import os
+
 from PIL import Image, ImageDraw, ImageFont
+
 from text_utils import wrap_text
 
 FONT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "fonts")

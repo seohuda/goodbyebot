@@ -99,6 +99,7 @@ class FuneralClient(discord.Client):
                 print(f"Error: {error}")
                 await message.channel.send(IMAGE_ERROR_MESSAGE, reference=message)
 
+
 client = FuneralClient()
 
 if __name__ == "__main__":
