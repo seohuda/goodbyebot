@@ -2,7 +2,6 @@ import io
 from collections.abc import Collection, Sized
 from typing import Final, Protocol
 
-import aiohttp
 import discord
 from config import TOKEN
 from image_generator import generate_funeral_image
@@ -77,7 +76,7 @@ def should_handle_reply_message(message: MessageContent, bot_user: BotUser) -> b
 async def read_avatar_bytes(user: UserWithAvatar) -> bytes | None:
     try:
         return await user.display_avatar.read()
-    except (aiohttp.ClientError, OSError, discord.HTTPException, ValueError, TimeoutError):
+    except (OSError, discord.DiscordException, ValueError, TimeoutError):
         return None
 
 

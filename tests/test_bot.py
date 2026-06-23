@@ -1,8 +1,6 @@
 import asyncio
 from dataclasses import dataclass, field
 
-import aiohttp
-
 from bot import extract_message_content, read_avatar_bytes, should_handle_reply_message
 
 
@@ -33,7 +31,7 @@ class FakeMessage:
 @dataclass(frozen=True, slots=True)
 class FakeAvatar:
     async def read(self) -> bytes:
-        raise aiohttp.ClientError("boom")
+        raise OSError("boom")
 
 
 @dataclass(frozen=True, slots=True)
