@@ -25,6 +25,7 @@ Simply reply to a target message and mention the bot, and it will generate a mem
   - Reply to a message and mention the bot to instantly create an image for that replied message.
 - **Profile Picture Rendering**
   - The target user’s avatar is embedded in the memorial image.
+  - If the avatar cannot be fetched, the bot falls back to the built-in placeholder panel.
 - **Dynamic Image Generation**
   - Real-time canvas rendering using the `Pillow` library.
   - The message is rendered below the avatar with automatic wrapping and center alignment.
