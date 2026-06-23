@@ -1,7 +1,63 @@
 import io
+from collections.abc import Sized
+from typing import Final, Protocol
+
 import discord
 from config import TOKEN
 from image_generator import generate_funeral_image
+
+MAX_CONTENT_LENGTH: Final = 150
+EMPTY_CONTENT: Final = "(내용 없음)"
+NO_TEXT_MESSAGE: Final = "텍스트 메시지만 영정사진으로 만들 수 있습니다."
+IMAGE_ERROR_MESSAGE: Final = "이미지 생성 중 오류가 발생했습니다."
+
+
+class BotUser(Protocol):
+    display_name: str
+    name: str
+
+
+class MessageContent(Protocol):
+    content: str
+    clean_content: str
+    attachments: Sized
+    embeds: Sized
+
+
+def strip_bot_mentions(content: str, bot_user: BotUser) -> str:
+    stripped_content = content
+    for mention in (f"@{bot_user.display_name}", f"@{bot_user.name}"):
+        stripped_content = stripped_content.replace(mention, "")
+    return stripped_content.strip()
+
+
+def truncate_content(content: str) -> str:
+    if len(content) <= MAX_CONTENT_LENGTH:
+        return content
+    return f"{content[: MAX_CONTENT_LENGTH - 3]}..."
+
+
+def has_media(message: MessageContent) -> bool:
+    return len(message.attachments) > 0 or len(message.embeds) > 0
+
+
+def extract_message_content(
+    target_message: MessageContent,
+    invoking_message: MessageContent,
+    bot_user: BotUser,
+) -> str | None:
+    content = target_message.clean_content
+    if target_message is invoking_message:
+        content = strip_bot_mentions(content, bot_user)
+
+    if content:
+        return truncate_content(content)
+
+    if has_media(target_message):
+        return None
+
+    return EMPTY_CONTENT
+
 
 class FuneralClient(discord.Client):
     def __init__(self):
@@ -15,43 +71,33 @@ class FuneralClient(discord.Client):
     async def on_message(self, message):
         if message.author.bot:
             return
-        
-        if self.user.mentioned_in(message):
+
+        bot_user = self.user
+        if bot_user is None:
+            return
+
+        if bot_user.mentioned_in(message):
             target_message = message
             if message.reference and isinstance(message.reference.resolved, discord.Message):
                 target_message = message.reference.resolved
 
-            # 첨부파일이나 임베드만 있는 경우
-            if not target_message.content and (target_message.attachments or target_message.embeds):
-                await message.channel.send("텍스트 메시지만 영정사진으로 만들 수 있습니다.", reference=message)
+            content = extract_message_content(target_message, message, bot_user)
+            if content is None:
+                await message.channel.send(NO_TEXT_MESSAGE, reference=message)
                 return
-
-            content = target_message.clean_content
-            if target_message == message:
-                content = content.replace(f'@{self.user.display_name}', '').strip()
-                content = content.replace(f'@{self.user.name}', '').strip()
-                
-            if not content:
-                content = "(내용 없음)"
-
-            # 너무 긴 메시지 자르기
-            if len(content) > 150:
-                content = content[:147] + "..."
 
             try:
                 canvas = generate_funeral_image(target_message.author.display_name, content)
-                
+
                 buffer = io.BytesIO()
                 canvas.save(buffer, format="PNG")
                 buffer.seek(0)
-                
+
                 file = discord.File(buffer, filename="funeral.png")
                 await message.channel.send(file=file, reference=message)
-            except IOError:
-                await message.channel.send("폰트 파일을 찾을 수 없어 기본 폰트로 렌더링되었습니다. (한글이 깨질 수 있습니다)", reference=message)
-            except Exception as e:
-                print(f"Error: {e}")
-                await message.channel.send("이미지 생성 중 오류가 발생했습니다.", reference=message)
+            except (OSError, UnicodeError, ValueError, discord.DiscordException) as error:
+                print(f"Error: {error}")
+                await message.channel.send(IMAGE_ERROR_MESSAGE, reference=message)
 
 client = FuneralClient()
 

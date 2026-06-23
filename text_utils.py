@@ -1,9 +1,10 @@
 from PIL import ImageFont
 
-def wrap_text(text: str, font: ImageFont.FreeTypeFont, max_width: int):
+
+def wrap_text(text: str, font: ImageFont.FreeTypeFont, max_width: int) -> list[str]:
     lines = []
     current_line = ""
-    
+
     for char in text:
         test_line = current_line + char
         if font.getlength(test_line) <= max_width:
@@ -12,8 +13,8 @@ def wrap_text(text: str, font: ImageFont.FreeTypeFont, max_width: int):
             if current_line:
                 lines.append(current_line)
             current_line = char
-            
+
     if current_line:
         lines.append(current_line)
-        
+
     return lines
