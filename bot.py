@@ -115,6 +115,22 @@ async def resolve_app_command_target(message: discord.Message) -> discord.Messag
     return message
 
 
+def should_use_channel_message(interaction: discord.Interaction, bot_user: BotUser) -> bool:
+    guild = interaction.guild
+    if guild is None:
+        return False
+
+    member = getattr(guild, "me", None)
+    if member is not None:
+        return True
+
+    get_member = getattr(guild, "get_member", None)
+    if callable(get_member):
+        return get_member(bot_user.id) is not None
+
+    return False
+
+
 def extract_message_content(
     target_message: MessageContent,
     invoking_message: MessageContent | None,
@@ -208,10 +224,10 @@ class FuneralClient(discord.Client):
             self,
             allowed_contexts=app_commands.AppCommandContext(
                 guild=True,
-                dm_channel=False,
-                private_channel=False,
+                dm_channel=True,
+                private_channel=True,
             ),
-            allowed_installs=app_commands.AppInstallationType(guild=True, user=False),
+            allowed_installs=app_commands.AppInstallationType(guild=True, user=True),
         )
         self._app_command_synced = False
         self._register_app_commands()
@@ -247,6 +263,14 @@ class FuneralClient(discord.Client):
 
             await interaction.response.defer()
             target_message = await resolve_app_command_target(message)
+            if should_use_channel_message(interaction, bot_user):
+                await send_funeral_result(channel, target_message, None, bot_user, reference=target_message)
+                try:
+                    await interaction.delete_original_response()
+                except discord.DiscordException:
+                    pass
+                return
+
             await send_funeral_followup_result(interaction, target_message, None, bot_user)
 
     async def on_message(self, message):

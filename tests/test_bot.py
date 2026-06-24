@@ -8,6 +8,7 @@ from bot import (
     read_avatar_bytes,
     resolve_app_command_target,
     send_funeral_followup_result,
+    should_use_channel_message,
     should_handle_reply_message,
 )
 
@@ -44,6 +45,16 @@ class FakeFollowup:
 @dataclass(slots=True)
 class FakeInteraction:
     followup: FakeFollowup = field(default_factory=FakeFollowup)
+    guild: object | None = None
+
+
+@dataclass(slots=True)
+class FakeGuild:
+    me: object | None = None
+    member: object | None = None
+
+    def get_member(self, user_id: int) -> object | None:
+        return self.member
 
 
 @dataclass(slots=True)
@@ -152,7 +163,31 @@ def test_send_funeral_followup_result_uses_followup_channel(monkeypatch) -> None
     assert "file" in interaction.followup.sent_kwargs[0]
 
 
-def test_funeral_client_limits_app_install_to_guilds_only() -> None:
+def test_should_use_channel_message_requires_bot_presence() -> None:
+    # Given: an interaction from a guild without the bot member cached.
+    interaction = FakeInteraction(guild=FakeGuild(me=None, member=None))
+    bot_user = FakeBotUser()
+
+    # When: the app decides how to send the result.
+    should_use_channel = should_use_channel_message(interaction, bot_user)
+
+    # Then: the app falls back to the interaction response path.
+    assert should_use_channel is False
+
+
+def test_should_use_channel_message_uses_bot_channel_when_present() -> None:
+    # Given: an interaction from a guild where the bot is present.
+    interaction = FakeInteraction(guild=FakeGuild(me=object(), member=None))
+    bot_user = FakeBotUser()
+
+    # When: the app decides how to send the result.
+    should_use_channel = should_use_channel_message(interaction, bot_user)
+
+    # Then: the bot can send the generated image as a normal channel message.
+    assert should_use_channel is True
+
+
+def test_funeral_client_supports_both_install_contexts() -> None:
     # Given: the client is initialized for app commands.
     client = FuneralClient()
 
@@ -160,12 +195,12 @@ def test_funeral_client_limits_app_install_to_guilds_only() -> None:
     allowed_installs = client.tree.allowed_installs
     allowed_contexts = client.tree.allowed_contexts
 
-    # Then: the app is guild-installed and guild-only.
+    # Then: the app is available both as a guild install and a user install.
     assert allowed_installs.guild is True
-    assert allowed_installs.user is False
+    assert allowed_installs.user is True
     assert allowed_contexts.guild is True
-    assert allowed_contexts.dm_channel is False
-    assert allowed_contexts.private_channel is False
+    assert allowed_contexts.dm_channel is True
+    assert allowed_contexts.private_channel is True
 
 
 def test_extract_message_content_truncates_long_text() -> None:
