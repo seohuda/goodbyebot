@@ -136,6 +136,24 @@ def test_should_handle_reply_message_accepts_bot_only_reply() -> None:
     assert should_handle is True
 
 
+def test_should_handle_reply_message_allows_target_author_mention_on_reply() -> None:
+    # Given: a reply that mentions the bot and the original message author.
+    bot_user = FakeBotUser()
+    target_user = FakeBotUser(id=2, display_name="Other", name="other")
+    message = FakeMessage(
+        content="@Goodbye @Other",
+        clean_content="@Goodbye @Other",
+        mentions=[bot_user, target_user],
+        reference=FakeReference(),
+    )
+
+    # When: the bot checks whether to process the reply with the target author known.
+    should_handle = should_handle_reply_message(message, bot_user, target_author_id=target_user.id)
+
+    # Then: the bot handles the reply.
+    assert should_handle is True
+
+
 def test_read_avatar_bytes_falls_back_when_cdn_is_unreachable() -> None:
     # Given: the avatar CDN fetch fails with a client error.
     user = FakeAvatarUser()

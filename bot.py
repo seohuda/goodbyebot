@@ -60,17 +60,25 @@ def has_media(message: MessageContent) -> bool:
     return len(message.attachments) > 0 or len(message.embeds) > 0
 
 
-def should_handle_reply_message(message: MessageContent, bot_user: BotUser) -> bool:
+def should_handle_reply_message(
+    message: MessageContent,
+    bot_user: BotUser,
+    target_author_id: int | None = None,
+) -> bool:
     if message.reference is None:
         return False
 
     if message.mention_everyone:
         return False
 
-    if len(message.mentions) != 1:
+    mentioned_user_ids = {mention.id for mention in message.mentions}
+    if bot_user.id not in mentioned_user_ids:
         return False
 
-    return any(mention.id == bot_user.id for mention in message.mentions)
+    if target_author_id is None:
+        return len(mentioned_user_ids) == 1
+
+    return mentioned_user_ids.issubset({bot_user.id, target_author_id})
 
 
 async def read_avatar_bytes(user: UserWithAvatar) -> bytes | None:
@@ -133,33 +141,38 @@ class FuneralClient(discord.Client):
         if bot_user is None:
             return
 
-        if should_handle_reply_message(message, bot_user):
-            target_message = await resolve_reply_target(message)
-            if target_message is None:
-                return
+        if message.reference is None:
+            return
 
-            content = extract_message_content(target_message, message, bot_user)
-            if content is None:
-                await message.channel.send(NO_TEXT_MESSAGE, reference=message)
-                return
+        target_message = await resolve_reply_target(message)
+        if target_message is None:
+            return
 
-            try:
-                avatar_bytes = await read_avatar_bytes(target_message.author)
-                canvas = generate_funeral_image(
-                    target_message.author.display_name,
-                    content,
-                    avatar_bytes=avatar_bytes,
-                )
+        if not should_handle_reply_message(message, bot_user, target_message.author.id):
+            return
 
-                buffer = io.BytesIO()
-                canvas.save(buffer, format="PNG")
-                buffer.seek(0)
+        content = extract_message_content(target_message, message, bot_user)
+        if content is None:
+            await message.channel.send(NO_TEXT_MESSAGE, reference=message)
+            return
 
-                file = discord.File(buffer, filename="funeral.png")
-                await message.channel.send(file=file, reference=message)
-            except (OSError, UnicodeError, ValueError, discord.DiscordException) as error:
-                print(f"Error: {error}")
-                await message.channel.send(IMAGE_ERROR_MESSAGE, reference=message)
+        try:
+            avatar_bytes = await read_avatar_bytes(target_message.author)
+            canvas = generate_funeral_image(
+                target_message.author.display_name,
+                content,
+                avatar_bytes=avatar_bytes,
+            )
+
+            buffer = io.BytesIO()
+            canvas.save(buffer, format="PNG")
+            buffer.seek(0)
+
+            file = discord.File(buffer, filename="funeral.png")
+            await message.channel.send(file=file, reference=message)
+        except (OSError, UnicodeError, ValueError, discord.DiscordException) as error:
+            print(f"Error: {error}")
+            await message.channel.send(IMAGE_ERROR_MESSAGE, reference=message)
 
 
 client = FuneralClient()
