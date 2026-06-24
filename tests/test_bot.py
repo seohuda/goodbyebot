@@ -7,7 +7,7 @@ from bot import (
     FuneralClient,
     read_avatar_bytes,
     resolve_app_command_target,
-    send_funeral_followup_result,
+    send_funeral_interaction_result,
     should_use_channel_message,
     should_handle_reply_message,
 )
@@ -43,7 +43,16 @@ class FakeFollowup:
 
 
 @dataclass(slots=True)
+class FakeResponse:
+    sent_kwargs: list[dict[str, object]] = field(default_factory=list)
+
+    async def send_message(self, **kwargs: object) -> None:
+        self.sent_kwargs.append(kwargs)
+
+
+@dataclass(slots=True)
 class FakeInteraction:
+    response: FakeResponse = field(default_factory=FakeResponse)
     followup: FakeFollowup = field(default_factory=FakeFollowup)
     guild: object | None = None
 
@@ -144,7 +153,7 @@ def test_resolve_app_command_target_uses_replied_to_message() -> None:
     assert target_message is original_message
 
 
-def test_send_funeral_followup_result_uses_followup_channel(monkeypatch) -> None:
+def test_send_funeral_interaction_result_uses_initial_response(monkeypatch) -> None:
     # Given: an app-command interaction and a message with text content.
     bot_user = FakeBotUser()
     interaction = FakeInteraction()
@@ -156,11 +165,11 @@ def test_send_funeral_followup_result_uses_followup_channel(monkeypatch) -> None
     monkeypatch.setattr(bot_module, "create_funeral_file", fake_create_funeral_file)
 
     # When: the bot sends the generated result.
-    asyncio.run(send_funeral_followup_result(interaction, target_message, None, bot_user))
+    asyncio.run(send_funeral_interaction_result(interaction, target_message, None, bot_user))
 
-    # Then: the response is sent through the interaction follow-up.
-    assert len(interaction.followup.sent_kwargs) == 1
-    assert "file" in interaction.followup.sent_kwargs[0]
+    # Then: the response is sent through the interaction response.
+    assert len(interaction.response.sent_kwargs) == 1
+    assert "file" in interaction.response.sent_kwargs[0]
 
 
 def test_should_use_channel_message_requires_bot_presence() -> None:

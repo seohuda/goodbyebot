@@ -215,6 +215,27 @@ async def send_funeral_followup_result(
             pass
 
 
+async def send_funeral_interaction_result(
+    interaction: discord.Interaction,
+    target_message: MessageContent,
+    invoking_message: MessageContent | None,
+    bot_user: BotUser,
+) -> None:
+    try:
+        file = await create_funeral_file(target_message, invoking_message, bot_user)
+        if file is None:
+            await interaction.response.send_message(NO_TEXT_MESSAGE)
+            return
+
+        await interaction.response.send_message(file=file)
+    except (OSError, UnicodeError, ValueError, discord.DiscordException) as error:
+        print(f"Error: {error}")
+        try:
+            await interaction.response.send_message(IMAGE_ERROR_MESSAGE)
+        except discord.DiscordException:
+            pass
+
+
 class FuneralClient(discord.Client):
     def __init__(self):
         intents = discord.Intents.default()
@@ -261,9 +282,9 @@ class FuneralClient(discord.Client):
             if channel is None:
                 return
 
-            await interaction.response.defer()
             target_message = await resolve_app_command_target(message)
             if should_use_channel_message(interaction, bot_user):
+                await interaction.response.defer()
                 await send_funeral_result(channel, target_message, None, bot_user, reference=target_message)
                 try:
                     await interaction.delete_original_response()
@@ -271,7 +292,7 @@ class FuneralClient(discord.Client):
                     pass
                 return
 
-            await send_funeral_followup_result(interaction, target_message, None, bot_user)
+            await send_funeral_interaction_result(interaction, target_message, None, bot_user)
 
     async def on_message(self, message):
         if message.author.bot:
