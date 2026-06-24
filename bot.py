@@ -203,8 +203,8 @@ class FuneralClient(discord.Client):
         self._app_command_synced = True
 
     def _register_app_commands(self) -> None:
-        @self.tree.context_menu(name="Make it a Quote")
-        async def make_it_a_quote(
+        @self.tree.context_menu(name="Goodbye")
+        async def goodbye(
             interaction: discord.Interaction,
             message: discord.Message,
         ) -> None:
