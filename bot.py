@@ -3,6 +3,7 @@ from collections.abc import Collection, Sized
 from typing import Final, Protocol
 
 import discord
+from discord import app_commands
 from config import TOKEN
 from image_generator import generate_funeral_image
 
@@ -108,11 +109,11 @@ async def resolve_reply_target(message: discord.Message) -> discord.Message | No
 
 def extract_message_content(
     target_message: MessageContent,
-    invoking_message: MessageContent,
+    invoking_message: MessageContent | None,
     bot_user: BotUser,
 ) -> str | None:
     content = target_message.clean_content
-    if target_message is invoking_message:
+    if invoking_message is not None and target_message is invoking_message:
         content = strip_bot_mentions(content, bot_user)
 
     if content:
@@ -124,14 +125,99 @@ def extract_message_content(
     return EMPTY_CONTENT
 
 
+async def create_funeral_file(
+    target_message: MessageContent,
+    invoking_message: MessageContent | None,
+    bot_user: BotUser,
+) -> discord.File | None:
+    content = extract_message_content(target_message, invoking_message, bot_user)
+    if content is None:
+        return None
+
+    avatar_bytes = await read_avatar_bytes(target_message.author)
+    canvas = generate_funeral_image(
+        target_message.author.display_name,
+        content,
+        avatar_bytes=avatar_bytes,
+    )
+
+    buffer = io.BytesIO()
+    canvas.save(buffer, format="PNG")
+    buffer.seek(0)
+    return discord.File(buffer, filename="funeral.png")
+
+
+async def send_funeral_result(
+    destination: discord.abc.Messageable,
+    target_message: MessageContent,
+    invoking_message: MessageContent | None,
+    bot_user: BotUser,
+    *,
+    reference: discord.Message | None = None,
+) -> None:
+    try:
+        file = await create_funeral_file(target_message, invoking_message, bot_user)
+        if file is None:
+            await destination.send(NO_TEXT_MESSAGE, reference=reference)
+            return
+
+        await destination.send(file=file, reference=reference)
+    except (OSError, UnicodeError, ValueError, discord.DiscordException) as error:
+        print(f"Error: {error}")
+        try:
+            await destination.send(IMAGE_ERROR_MESSAGE, reference=reference)
+        except discord.DiscordException:
+            pass
+
+
 class FuneralClient(discord.Client):
     def __init__(self):
         intents = discord.Intents.default()
         intents.message_content = True
         super().__init__(intents=intents)
+        self.tree = app_commands.CommandTree(
+            self,
+            allowed_contexts=app_commands.AppCommandContext(
+                guild=True,
+                dm_channel=True,
+                private_channel=True,
+            ),
+            allowed_installs=app_commands.AppInstallationType(guild=True, user=True),
+        )
+        self._app_command_synced = False
+        self._register_app_commands()
 
     async def on_ready(self):
         print(f"Logged in as {self.user}")
+
+    async def setup_hook(self) -> None:
+        if self._app_command_synced:
+            return
+
+        try:
+            await self.tree.sync()
+        except (app_commands.MissingApplicationID, discord.Forbidden, discord.HTTPException) as error:
+            print(f"Error syncing app commands: {error}")
+            return
+
+        self._app_command_synced = True
+
+    def _register_app_commands(self) -> None:
+        @self.tree.context_menu(name="Make it a Quote")
+        async def make_it_a_quote(
+            interaction: discord.Interaction,
+            message: discord.Message,
+        ) -> None:
+            bot_user = self.user
+            if bot_user is None:
+                return
+
+            channel = interaction.channel
+            if channel is None:
+                return
+
+            await interaction.response.defer()
+            await send_funeral_result(channel, message, None, bot_user, reference=message)
 
     async def on_message(self, message):
         if message.author.bot:
@@ -151,28 +237,7 @@ class FuneralClient(discord.Client):
         if not should_handle_reply_message(message, bot_user, target_message.author.id):
             return
 
-        content = extract_message_content(target_message, message, bot_user)
-        if content is None:
-            await message.channel.send(NO_TEXT_MESSAGE, reference=message)
-            return
-
-        try:
-            avatar_bytes = await read_avatar_bytes(target_message.author)
-            canvas = generate_funeral_image(
-                target_message.author.display_name,
-                content,
-                avatar_bytes=avatar_bytes,
-            )
-
-            buffer = io.BytesIO()
-            canvas.save(buffer, format="PNG")
-            buffer.seek(0)
-
-            file = discord.File(buffer, filename="funeral.png")
-            await message.channel.send(file=file, reference=message)
-        except (OSError, UnicodeError, ValueError, discord.DiscordException) as error:
-            print(f"Error: {error}")
-            await message.channel.send(IMAGE_ERROR_MESSAGE, reference=message)
+        await send_funeral_result(message.channel, target_message, message, bot_user, reference=message)
 
 
 client = FuneralClient()
