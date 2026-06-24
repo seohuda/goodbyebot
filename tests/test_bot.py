@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 import bot as bot_module
 from bot import (
     extract_message_content,
+    FuneralClient,
     read_avatar_bytes,
     resolve_app_command_target,
     send_funeral_followup_result,
@@ -149,6 +150,22 @@ def test_send_funeral_followup_result_uses_followup_channel(monkeypatch) -> None
     # Then: the response is sent through the interaction follow-up.
     assert len(interaction.followup.sent_kwargs) == 1
     assert "file" in interaction.followup.sent_kwargs[0]
+
+
+def test_funeral_client_limits_app_install_to_guilds_only() -> None:
+    # Given: the client is initialized for app commands.
+    client = FuneralClient()
+
+    # When: the app command tree configuration is inspected.
+    allowed_installs = client.tree.allowed_installs
+    allowed_contexts = client.tree.allowed_contexts
+
+    # Then: the app is guild-installed and guild-only.
+    assert allowed_installs.guild is True
+    assert allowed_installs.user is False
+    assert allowed_contexts.guild is True
+    assert allowed_contexts.dm_channel is False
+    assert allowed_contexts.private_channel is False
 
 
 def test_extract_message_content_truncates_long_text() -> None:

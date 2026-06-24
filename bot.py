@@ -208,10 +208,10 @@ class FuneralClient(discord.Client):
             self,
             allowed_contexts=app_commands.AppCommandContext(
                 guild=True,
-                dm_channel=True,
-                private_channel=True,
+                dm_channel=False,
+                private_channel=False,
             ),
-            allowed_installs=app_commands.AppInstallationType(guild=True, user=True),
+            allowed_installs=app_commands.AppInstallationType(guild=True, user=False),
         )
         self._app_command_synced = False
         self._register_app_commands()
