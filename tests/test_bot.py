@@ -70,6 +70,21 @@ def test_extract_message_content_strips_self_mentions() -> None:
     assert content == "마지막 한마디"
 
 
+def test_extract_message_content_keeps_mentions_for_app_command() -> None:
+    # Given: a selected message that mentions the bot as part of the original text.
+    bot_user = FakeBotUser()
+    message = FakeMessage(
+        content="@Goodbye 마지막 한마디",
+        clean_content="@Goodbye 마지막 한마디",
+    )
+
+    # When: the content is extracted without a separate invoking message.
+    content = extract_message_content(message, None, bot_user)
+
+    # Then: the original text is preserved for the app command path.
+    assert content == "@Goodbye 마지막 한마디"
+
+
 def test_extract_message_content_truncates_long_text() -> None:
     # Given: a target message is longer than the image layout supports.
     bot_user = FakeBotUser()
