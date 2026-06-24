@@ -1,7 +1,14 @@
 import asyncio
 from dataclasses import dataclass, field
 
-from bot import extract_message_content, read_avatar_bytes, should_handle_reply_message
+import bot as bot_module
+from bot import (
+    extract_message_content,
+    read_avatar_bytes,
+    resolve_app_command_target,
+    send_funeral_followup_result,
+    should_handle_reply_message,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,6 +25,27 @@ class FakeReference:
 
 
 @dataclass(slots=True)
+class FakeChannel:
+    target: object | None = None
+
+    async def fetch_message(self, message_id: int) -> object | None:
+        return self.target
+
+
+@dataclass(slots=True)
+class FakeFollowup:
+    sent_kwargs: list[dict[str, object]] = field(default_factory=list)
+
+    async def send(self, **kwargs: object) -> None:
+        self.sent_kwargs.append(kwargs)
+
+
+@dataclass(slots=True)
+class FakeInteraction:
+    followup: FakeFollowup = field(default_factory=FakeFollowup)
+
+
+@dataclass(slots=True)
 class FakeMessage:
     content: str
     clean_content: str
@@ -26,6 +54,8 @@ class FakeMessage:
     mentions: list["FakeBotUser"] = field(default_factory=list)
     mention_everyone: bool = False
     reference: FakeReference | None = None
+    channel: object = field(default_factory=FakeChannel)
+    author: FakeBotUser = field(default_factory=FakeBotUser)
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,6 +113,42 @@ def test_extract_message_content_keeps_mentions_for_app_command() -> None:
 
     # Then: the original text is preserved for the app command path.
     assert content == "@Goodbye 마지막 한마디"
+
+
+def test_resolve_app_command_target_uses_replied_to_message() -> None:
+    # Given: a reply message that points at an original target.
+    original_message = FakeMessage(content="원본", clean_content="원본")
+    reply_message = FakeMessage(
+        content="답장",
+        clean_content="답장",
+        reference=FakeReference(resolved=None, message_id=1),
+        channel=FakeChannel(target=original_message),
+    )
+
+    # When: the app command target is resolved.
+    target_message = asyncio.run(resolve_app_command_target(reply_message))
+
+    # Then: the original message is used instead of the reply itself.
+    assert target_message is original_message
+
+
+def test_send_funeral_followup_result_uses_followup_channel(monkeypatch) -> None:
+    # Given: an app-command interaction and a message with text content.
+    bot_user = FakeBotUser()
+    interaction = FakeInteraction()
+    target_message = FakeMessage(content="원본", clean_content="원본")
+
+    async def fake_create_funeral_file(*args, **kwargs) -> object:
+        return object()
+
+    monkeypatch.setattr(bot_module, "create_funeral_file", fake_create_funeral_file)
+
+    # When: the bot sends the generated result.
+    asyncio.run(send_funeral_followup_result(interaction, target_message, None, bot_user))
+
+    # Then: the response is sent through the interaction follow-up.
+    assert len(interaction.followup.sent_kwargs) == 1
+    assert "file" in interaction.followup.sent_kwargs[0]
 
 
 def test_extract_message_content_truncates_long_text() -> None:
