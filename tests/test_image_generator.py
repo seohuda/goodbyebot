@@ -128,3 +128,20 @@ def test_generate_funeral_image_draws_inverted_top_ribbon(monkeypatch) -> None:
     assert canvas.getpixel((680, 220)) in ribbon_colors
     assert canvas.getpixel((95, 230)) in ribbon_colors
     assert canvas.getpixel((705, 230)) in ribbon_colors
+
+
+def test_generate_funeral_image_draws_bot_id_in_bottom_right(monkeypatch) -> None:
+    def fake_font(size: int) -> image_generator.ImageFont.ImageFont:
+        return image_generator.ImageFont.load_default(size=size)
+
+    monkeypatch.setattr(image_generator, "load_korean_font", fake_font)
+
+    canvas = image_generator.generate_funeral_image(
+        "장례식봇",
+        "봇 아이디가 우측 하단에 보여야 해",
+        avatar_bytes=None,
+    )
+
+    bot_id_region = canvas.crop((620, 1120, 790, 1195))
+
+    assert bot_id_region.getbbox() is not None

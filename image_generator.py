@@ -46,6 +46,9 @@ PLACEHOLDER_COLOR: Final[tuple[int, int, int]] = (232, 232, 232)
 TOP_RIBBON_APEX: Final[Point] = (CANVAS_SIZE[0] // 2, PANEL_TOP - 24)
 TOP_RIBBON_LEFT_BASE: Final[Point] = (PANEL_LEFT - RIBBON_WIDTH, PANEL_TOP + 180)
 TOP_RIBBON_RIGHT_BASE: Final[Point] = (PANEL_RIGHT + RIBBON_WIDTH, PANEL_TOP + 180)
+BOT_ID_TEXT: Final[str] = "장례식봇#3571"
+BOT_ID_COLOR: Final[tuple[int, int, int]] = (156, 156, 168)
+BOT_ID_POSITION: Final[Point] = (CANVAS_SIZE[0] - 28, CANVAS_SIZE[1] - 32)
 
 
 def load_korean_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
@@ -180,5 +183,8 @@ def generate_funeral_image(
     for line in message_lines:
         draw.text((400, message_y), line, fill=MESSAGE_COLOR, font=font_content, anchor="mm")
         message_y += 56
+
+    bot_id_font = fit_font_to_width(BOT_ID_TEXT, 200, 20, 14)
+    draw.text(BOT_ID_POSITION, BOT_ID_TEXT, fill=BOT_ID_COLOR, font=bot_id_font, anchor="rd")
 
     return canvas
