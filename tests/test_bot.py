@@ -29,9 +29,13 @@ class FakeReference:
 @dataclass(slots=True)
 class FakeChannel:
     target: object | None = None
+    permissions: object | None = None
 
     async def fetch_message(self, message_id: int) -> object | None:
         return self.target
+
+    def permissions_for(self, member: object) -> object | None:
+        return self.permissions
 
 
 @dataclass(slots=True)
@@ -50,11 +54,19 @@ class FakeResponse:
         self.sent_kwargs.append(kwargs)
 
 
+@dataclass(frozen=True, slots=True)
+class FakeChannelPermissions:
+    view_channel: bool = False
+    send_messages: bool = False
+    read_message_history: bool = False
+
+
 @dataclass(slots=True)
 class FakeInteraction:
     response: FakeResponse = field(default_factory=FakeResponse)
     followup: FakeFollowup = field(default_factory=FakeFollowup)
     guild: object | None = None
+    channel: object | None = None
 
 
 @dataclass(slots=True)
@@ -186,7 +198,10 @@ def test_should_use_channel_message_requires_bot_presence() -> None:
 
 def test_should_use_channel_message_uses_bot_channel_when_present() -> None:
     # Given: an interaction from a guild where the bot is present.
-    interaction = FakeInteraction(guild=FakeGuild(me=object(), member=None))
+    interaction = FakeInteraction(
+        guild=FakeGuild(me=object(), member=None),
+        channel=FakeChannel(permissions=FakeChannelPermissions(view_channel=True, send_messages=True, read_message_history=True)),
+    )
     bot_user = FakeBotUser()
 
     # When: the app decides how to send the result.
@@ -194,6 +209,21 @@ def test_should_use_channel_message_uses_bot_channel_when_present() -> None:
 
     # Then: the bot can send the generated image as a normal channel message.
     assert should_use_channel is True
+
+
+def test_should_use_channel_message_requires_channel_permissions() -> None:
+    # Given: an interaction from a guild where the bot is cached but cannot send messages in-channel.
+    interaction = FakeInteraction(
+        guild=FakeGuild(me=object(), member=None),
+        channel=FakeChannel(permissions=FakeChannelPermissions()),
+    )
+    bot_user = FakeBotUser()
+
+    # When: the app decides how to send the result.
+    should_use_channel = should_use_channel_message(interaction, bot_user)
+
+    # Then: the app falls back to the interaction response path instead of hitting Missing Access.
+    assert should_use_channel is False
 
 
 def test_funeral_client_supports_both_install_contexts() -> None:

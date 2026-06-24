@@ -5,6 +5,7 @@ from typing import Final, Protocol
 import discord
 from discord import app_commands
 from config import TOKEN
+from app_command_utils import should_use_channel_message
 from image_generator import generate_funeral_image
 
 MAX_CONTENT_LENGTH: Final = 150
@@ -113,22 +114,6 @@ async def resolve_app_command_target(message: discord.Message) -> discord.Messag
         return target_message
 
     return message
-
-
-def should_use_channel_message(interaction: discord.Interaction, bot_user: BotUser) -> bool:
-    guild = interaction.guild
-    if guild is None:
-        return False
-
-    member = getattr(guild, "me", None)
-    if member is not None:
-        return True
-
-    get_member = getattr(guild, "get_member", None)
-    if callable(get_member):
-        return get_member(bot_user.id) is not None
-
-    return False
 
 
 def extract_message_content(
