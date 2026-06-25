@@ -1,3 +1,14 @@
 .env
+.venv/
+.pytest_cache/
+.codegraph
+.codegraph/
+.DS_Store
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.coverage
+htmlcov/
+assets/fonts/Hakgyoansim_PosterB.ttf
+assets/.DS_Store
