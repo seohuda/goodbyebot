@@ -1,9 +1,17 @@
-from pathlib import Path
 from io import BytesIO
+from pathlib import Path
 
 from PIL import Image
 
 import image_generator
+
+
+def patch_default_font(monkeypatch) -> None:
+    monkeypatch.setattr(
+        image_generator,
+        "load_korean_font",
+        lambda size: image_generator.ImageFont.load_default(size=size),
+    )
 
 
 def test_load_korean_font_uses_first_existing_candidate(monkeypatch, tmp_path) -> None:
@@ -56,10 +64,7 @@ def test_fit_font_to_width_shrinks_long_title(monkeypatch) -> None:
 
 
 def test_generate_funeral_image_renders_avatar(monkeypatch) -> None:
-    def fake_font(size: int) -> image_generator.ImageFont.ImageFont:
-        return image_generator.ImageFont.load_default(size=size)
-
-    monkeypatch.setattr(image_generator, "load_korean_font", fake_font)
+    patch_default_font(monkeypatch)
 
     avatar = Image.new("RGBA", (32, 32), (255, 0, 0, 255))
     buffer = BytesIO()
@@ -75,10 +80,7 @@ def test_generate_funeral_image_renders_avatar(monkeypatch) -> None:
 
 
 def test_generate_funeral_image_uses_placeholder_avatar_when_missing(monkeypatch) -> None:
-    def fake_font(size: int) -> image_generator.ImageFont.ImageFont:
-        return image_generator.ImageFont.load_default(size=size)
-
-    monkeypatch.setattr(image_generator, "load_korean_font", fake_font)
+    patch_default_font(monkeypatch)
 
     canvas = image_generator.generate_funeral_image(
         "장례식봇",
@@ -90,10 +92,7 @@ def test_generate_funeral_image_uses_placeholder_avatar_when_missing(monkeypatch
 
 
 def test_generate_funeral_image_places_id_and_message_below_frame(monkeypatch) -> None:
-    def fake_font(size: int) -> image_generator.ImageFont.ImageFont:
-        return image_generator.ImageFont.load_default(size=size)
-
-    monkeypatch.setattr(image_generator, "load_korean_font", fake_font)
+    patch_default_font(monkeypatch)
 
     canvas = image_generator.generate_funeral_image(
         "장례식봇",
@@ -109,10 +108,7 @@ def test_generate_funeral_image_places_id_and_message_below_frame(monkeypatch) -
 
 
 def test_generate_funeral_image_draws_inverted_top_ribbon(monkeypatch) -> None:
-    def fake_font(size: int) -> image_generator.ImageFont.ImageFont:
-        return image_generator.ImageFont.load_default(size=size)
-
-    monkeypatch.setattr(image_generator, "load_korean_font", fake_font)
+    patch_default_font(monkeypatch)
 
     canvas = image_generator.generate_funeral_image(
         "장례식봇",
@@ -131,10 +127,7 @@ def test_generate_funeral_image_draws_inverted_top_ribbon(monkeypatch) -> None:
 
 
 def test_generate_funeral_image_draws_bot_id_in_bottom_right(monkeypatch) -> None:
-    def fake_font(size: int) -> image_generator.ImageFont.ImageFont:
-        return image_generator.ImageFont.load_default(size=size)
-
-    monkeypatch.setattr(image_generator, "load_korean_font", fake_font)
+    patch_default_font(monkeypatch)
 
     canvas = image_generator.generate_funeral_image(
         "장례식봇",
