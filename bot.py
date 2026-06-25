@@ -179,27 +179,6 @@ async def send_funeral_result(
             pass
 
 
-async def send_funeral_followup_result(
-    interaction: discord.Interaction,
-    target_message: MessageContent,
-    invoking_message: MessageContent | None,
-    bot_user: BotUser,
-) -> None:
-    try:
-        file = await create_funeral_file(target_message, invoking_message, bot_user)
-        if file is None:
-            await interaction.followup.send(NO_TEXT_MESSAGE)
-            return
-
-        await interaction.followup.send(file=file)
-    except (OSError, UnicodeError, ValueError, discord.DiscordException) as error:
-        print(f"Error: {error}")
-        try:
-            await interaction.followup.send(IMAGE_ERROR_MESSAGE)
-        except discord.DiscordException:
-            pass
-
-
 async def send_funeral_interaction_result(
     interaction: discord.Interaction,
     target_message: MessageContent,
